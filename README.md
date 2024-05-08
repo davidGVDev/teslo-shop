@@ -86,3 +86,7 @@ docker-compose up -d
 ```
 npm run strt:dev
 ```
+7. Ejecutar Seed
+```
+http://localhost:3000/api/seed
+```
