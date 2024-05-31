@@ -13,6 +13,7 @@ import { Product } from './entities/product.entity';
 import { PaginationDto } from '../common/dtos/pagination.dto';
 import { validate as isUUID } from 'uuid';
 import { ProductImage } from './entities/product-image.entity';
+import { User } from 'src/auth/entities/user.entity';
 
 @Injectable()
 export class ProductsService {
@@ -26,7 +27,7 @@ export class ProductsService {
     private readonly dataSource: DataSource,
   ) {}
 
-  async create(createProductDto: CreateProductDto) {
+  async create(createProductDto: CreateProductDto, user: User) {
     const { images = [], ...productDetails } = createProductDto;
     try {
       const product = this.productRepository.create({
@@ -34,6 +35,7 @@ export class ProductsService {
         images: images.map((image) =>
           this.productImageRepository.create({ url: image }),
         ),
+        user: user,
       });
       await this.productRepository.save(product);
       return { ...product, images };
@@ -84,7 +86,7 @@ export class ProductsService {
     };
   }
 
-  async update(id: string, updateProductDto: UpdateProductDto) {
+  async update(id: string, updateProductDto: UpdateProductDto, user:User) {
     const { images, ...toUpdate } = updateProductDto;
 
     const product = await this.productRepository.preload({
@@ -107,13 +109,14 @@ export class ProductsService {
         );
       } else {
       }
+      product.user = user
       await queryRunner.manager.save(product);
       await queryRunner.commitTransaction();
       await queryRunner.release();
       return this.findOnePlain(id);
     } catch (error) {
       await queryRunner.rollbackTransaction();
-      await queryRunner.release()
+      await queryRunner.release();
       this.handleDbExeptions(error);
     }
   }
@@ -131,12 +134,12 @@ export class ProductsService {
     throw new InternalServerErrorException('Unexpeected error check logs');
   }
 
-  async deleteAllProducts(){
-    const query = this.productRepository.createQueryBuilder('product')
-    try { 
+  async deleteAllProducts() {
+    const query = this.productRepository.createQueryBuilder('product');
+    try {
       return await query.delete().where({}).execute();
     } catch (error) {
-      this.handleDbExeptions(error)
+      this.handleDbExeptions(error);
     }
   }
 }
